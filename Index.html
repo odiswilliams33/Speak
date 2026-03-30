@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Gold Calc"/>
+<title>Gold Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --gold: #C9933A;
+    --gold-light: #E8B86D;
+    --gold-pale: #F5E6C8;
+    --gold-dark: #7A5520;
+    --bg: #0F0E0C;
+    --surface: #1A1815;
+    --surface2: #232018;
+    --border: rgba(201,147,58,0.18);
+    --border-strong: rgba(201,147,58,0.4);
+    --text: #F0E8D8;
+    --text-muted: #8C7D65;
+    --text-dim: #4A4236;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 16px; }
+  body { padding: env(safe-area-inset-top, 20px) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 0); }
+
+  .app { max-width: 520px; margin: 0 auto; padding: 24px 20px 40px; }
+
+  .header { text-align: center; margin-bottom: 28px; }
+  .header h1 { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--gold-light); letter-spacing: 0.02em; line-height: 1.2; }
+  .header p { font-size: 13px; color: var(--text-muted); margin-top: 6px; font-weight: 300; letter-spacing: 0.04em; }
+
+  .mic-area { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .mic-btn {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: var(--surface2); border: 1.5px solid var(--border-strong);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; position: relative; outline: none;
+  }
+  .mic-btn:active { transform: scale(0.95); }
+  .mic-btn.listening {
+    border-color: var(--gold);
+    background: rgba(201,147,58,0.12);
+    animation: pulse-ring 1.2s infinite;
+  }
+  .mic-btn.done { border-color: #4a9e6a; background: rgba(74,158,106,0.12); }
+  @keyframes pulse-ring {
+    0%,100% { box-shadow: 0 0 0 0 rgba(201,147,58,0.3); }
+    50% { box-shadow: 0 0 0 14px rgba(201,147,58,0); }
+  }
+  .mic-icon { width: 32px; height: 32px; stroke: var(--gold-light); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .mic-btn.listening .mic-icon { stroke: var(--gold); }
+  .mic-btn.done .mic-icon { stroke: #4a9e6a; }
+  .mic-status { font-size: 13px; color: var(--text-muted); font-weight: 300; letter-spacing: 0.03em; }
+  .transcript {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 10px 14px; font-size: 13px; color: var(--text-muted); font-style: italic;
+    min-height: 38px; width: 100%; text-align: center; line-height: 1.5;
+  }
+
+  .section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; }
+  .section-title { font-size: 10px; font-weight: 500; color: var(--gold); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 12px; }
+
+  .fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 11px; color: var(--text-muted); font-weight: 400; letter-spacing: 0.03em; }
+  .field input, .field select {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 400;
+    padding: 9px 12px; outline: none; width: 100%;
+    -webkit-appearance: none; appearance: none;
+  }
+  .field input:focus, .field select:focus { border-color: var(--border-strong); }
+  .field input::placeholder { color: var(--text-dim); }
+
+  .karat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+  .karat-btn {
+    padding: 9px 4px; font-size: 13px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface2); color: var(--text-muted); cursor: pointer;
+    text-align: center; transition: all 0.15s; outline: none;
+  }
+  .karat-btn:active { transform: scale(0.97); }
+  .karat-btn.active { background: rgba(201,147,58,0.15); border-color: var(--gold); color: var(--gold-light); }
+
+  .weight-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+  .unit-toggle { display: flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; height: 38px; }
+  .unit-btn { flex: 1; font-size: 12px; font-family: 'DM Sans', sans-serif; font-weight: 400; background: var(--surface2); color: var(--text-muted); border: none; cursor: pointer; padding: 0 8px; white-space: nowrap; outline: none; transition: all 0.15s; }
+  .unit-btn.active { background: rgba(201,147,58,0.15); color: var(--gold-light); font-weight: 500; }
+
+  .result-section { background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .metric { background: var(--surface2); border-radius: var(--radius-sm); padding: 10px 12px; border: 1px solid var(--border); }
+  .metric-label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 4px; }
+  .metric-val { font-size: 15px; font-weight: 500; color: var(--text); }
+  .offer-box { background: rgba(201,147,58,0.1); border: 1px solid var(--gold); border-radius: var(--radius-sm); padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; }
+  .offer-label { font-size: 12px; font-weight: 500; color: var(--gold); text-transform: uppercase; letter-spacing: 0.08em; }
+  .offer-val { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 700; color: var(--gold-light); }
+  .empty-hint { font-size: 13px; color: var(--text-dim); text-align: center; padding: 10px 0; font-style: italic; }
+
+  .examples { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .examples-title { font-size: 10px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 11px; background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; font-style: italic; }
+
+  .no-support { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 16px; font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <h1>Gold Calculator</h1>
+    <p>Tap the mic and speak — or type values below</p>
+  </div>
+
+  <div id="noSupport" class="no-support" style="display:none;">
+    Voice not supported in this browser. Type values manually below.
+  </div>
+
+  <div class="mic-area">
+    <button class="mic-btn" id="micBtn" aria-label="Start voice input">
+      <svg class="mic-icon" viewBox="0 0 24 24">
+        <rect x="9" y="2" width="6" height="12" rx="3"/>
+        <path d="M5 10a7 7 0 0 0 14 0"/>
+        <line x1="12" y1="19" x2="12" y2="22"/>
+        <line x1="9" y1="22" x2="15" y2="22"/>
+      </svg>
+    </button>
+    <span class="mic-status" id="micStatus">Tap mic to speak</span>
+    <div class="transcript" id="transcript">Waiting for voice input…</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Market settings</div>
+    <div class="fields-row">
+      <div class="field">
+        <label>Spot price ($ / troy oz)</label>
+        <input type="number" id="spotPrice" placeholder="e.g. 3300" inputmode="decimal" min="0" step="0.01"/>
+      </div>
+      <div class="field">
+        <label>Buy % of spot</label>
+        <input type="number" id="buyPct" placeholder="e.g. 85" inputmode="decimal" min="0" max="200" step="0.1"/>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Gold karat</div>
+    <div class="karat-grid">
+      <button class="karat-btn" data-k="24" data-p="1">24k</button>
+      <button class="karat-btn" data-k="22" data-p="0.9167">22k</button>
+      <button class="karat-btn" data-k="21" data-p="0.875">21k</button>
+      <button class="karat-btn" data-k="18" data-p="0.75">18k</button>
+      <button class="karat-btn" data-k="14" data-p="0.5833">14k</button>
+      <button class="karat-btn" data-k="10" data-p="0.4167">10k</button>
+      <button class="karat-btn" data-k="9" data-p="0.375">9k</button>
+      <button class="karat-btn" data-k="8" data-p="0.3333">8k</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Weight</div>
+    <div class="weight-row">
+      <div class="field">
+        <label>Amount</label>
+        <input type="number" id="weight" placeholder="e.g. 10.5" inputmode="decimal" min="0" step="0.01"/>
+      </div>
+      <div class="unit-toggle">
+        <button class="unit-btn active" data-unit="g">g</button>
+        <button class="unit-btn" data-unit="ozt">ozt</button>
+        <button class="unit-btn" data-unit="dwt">dwt</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-section">
+    <p class="empty-hint" id="emptyHint">Fill in all values to see your offer price</p>
+    <div id="resultContent" style="display:none;">
+      <div class="result-grid">
+        <div class="metric"><div class="metric-label">Purity</div><div class="metric-val" id="rPurity">—</div></div>
+        <div class="metric"><div class="metric-label">Pure gold</div><div class="metric-val" id="rPureWt">—</div></div>
+        <div class="metric"><div class="metric-label">Melt value</div><div class="metric-val" id="rMelt">—</div></div>
+        <div class="metric"><div class="metric-label">Buy rate</div><div class="metric-val" id="rPct">—</div></div>
+      </div>
+      <div class="offer-box">
+        <span class="offer-label">Offer price</span>
+        <span class="offer-val" id="rPay">$0.00</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="examples">
+    <div class="examples-title">Voice examples</div>
+    <div class="chips">
+      <span class="chip">"spot price 3300"</span>
+      <span class="chip">"buy at 80 percent"</span>
+      <span class="chip">"18 karat"</span>
+      <span class="chip">"10.5 grams"</span>
+      <span class="chip">"2 troy ounces"</span>
+      <span class="chip">"14 pennyweight"</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const TROY_OZ_PER_G = 1/31.1035;
+const TROY_OZ_PER_DWT = 1/20;
+const karatMap = {24:1, 22:0.9167, 21:0.875, 18:0.75, 14:0.5833, 10:0.4167, 9:0.375, 8:0.3333};
+let selKarat=null, selPurity=null, selUnit='g';
+
+function fmt(n,d){return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function toTroyOz(v,u){return u==='ozt'?v:u==='g'?v*TROY_OZ_PER_G:v*TROY_OZ_PER_DWT;}
+
+function calc(){
+  const spot=parseFloat(document.getElementById('spotPrice').value);
+  const pct=parseFloat(document.getElementById('buyPct').value);
+  const wt=parseFloat(document.getElementById('weight').value);
+  const ready=!isNaN(spot)&&spot>0&&!isNaN(pct)&&pct>0&&!isNaN(wt)&&wt>0&&selPurity!==null;
+  document.getElementById('emptyHint').style.display=ready?'none':'block';
+  document.getElementById('resultContent').style.display=ready?'block':'none';
+  if(!ready)return;
+  const wtOzt=toTroyOz(wt,selUnit);
+  const pureOzt=wtOzt*selPurity;
+  const melt=pureOzt*spot;
+  const offer=melt*(pct/100);
+  const pureLabel=selUnit==='g'?fmt(pureOzt/TROY_OZ_PER_G,3)+' g':selUnit==='dwt'?fmt(pureOzt/TROY_OZ_PER_DWT,3)+' dwt':fmt(pureOzt,4)+' ozt';
+  document.getElementById('rPurity').textContent=(selPurity*100).toFixed(2)+'% ('+selKarat+'k)';
+  document.getElementById('rPureWt').textContent=pureLabel;
+  document.getElementById('rMelt').textContent='$'+fmt(melt,2);
+  document.getElementById('rPct').textContent=fmt(pct,1)+'% of melt';
+  document.getElementById('rPay').textContent='$'+fmt(offer,2);
+  speak('Your offer price is '+fmt(offer,2)+' dollars');
+}
+
+function setKarat(k){
+  selKarat=k; selPurity=karatMap[k];
+  document.querySelectorAll('.karat-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.k)===k));
+}
+function setUnit(u){
+  selUnit=u;
+  document.querySelectorAll('.unit-btn').forEach(b=>b.classList.toggle('active',b.dataset.unit===u));
+}
+
+document.querySelectorAll('.karat-btn').forEach(b=>b.addEventListener('click',()=>{setKarat(parseInt(b.dataset.k));calc();}));
+document.querySelectorAll('.unit-btn').forEach(b=>b.addEventListener('click',()=>{setUnit(b.dataset.unit);calc();}));
+document.getElementById('spotPrice').addEventListener('input',calc);
+document.getElementById('buyPct').addEventListener('input',calc);
+document.getElementById('weight').addEventListener('input',calc);
+
+function speak(text){
+  if('speechSynthesis' in window){
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.rate=1.05;
+    window.speechSynthesis.speak(u);
+  }
+}
+
+function parseVoice(text){
+  const t=text.toLowerCase();
+  let matched=false;
+  let m;
+
+  m=t.match(/spot(?:\s+price)?\s+(?:is\s+|of\s+|at\s+)?([\d,]+(?:\.\d+)?)/);
+  if(m){document.getElementById('spotPrice').value=parseFloat(m[1].replace(/,/g,''));matched=true;}
+
+  m=t.match(/(?:buy|buying|offer|paying)\s+(?:at\s+)?([\d.]+)\s*(?:percent|%)/);
+  if(!m)m=t.match(/([\d.]+)\s*(?:percent|%)\s+(?:of\s+spot|buy|offer)/);
+  if(m){document.getElementById('buyPct').value=parseFloat(m[1]);matched=true;}
+
+  const wordKarats={eight:8,nine:9,ten:10,fourteen:14,eighteen:18,'twenty one':21,'twenty-one':21,'twenty two':22,'twenty-two':22,'twenty four':24,'twenty-four':24};
+  m=t.match(/(\d+)\s*(?:karat|carat|k\b)/);
+  if(!m){
+    for(const[w,v] of Object.entries(wordKarats)){
+      if(t.includes(w+' karat')||t.includes(w+' carat')){
+        if(karatMap[v]){setKarat(v);matched=true;}
+        break;
+      }
+    }
+  }
+  if(m){const k=parseInt(m[1]);if(karatMap[k]){setKarat(k);matched=true;}}
+
+  m=t.match(/([\d.]+)\s*(?:troy\s+oz(?:unce)?s?|ozt)/);
+  if(m){document.getElementById('weight').value=parseFloat(m[1]);setUnit('ozt');matched=true;}
+  else{
+    m=t.match(/([\d.]+)\s*(?:pennyweight|dwt|penny\s*weight)/);
+    if(m){document.getElementById('weight').value=parseFloat(m[1]);setUnit('dwt');matched=true;}
+    else{
+      m=t.match(/([\d.]+)\s*(?:gram|grams|\bg\b)/);
+      if(m){document.getElementById('weight').value=parseFloat(m[1]);setUnit('g');matched=true;}
+    }
+  }
+
+  if(matched)calc();
+  return matched;
+}
+
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(!SR){document.getElementById('noSupport').style.display='block';}
+
+let recognition, isListening=false;
+const micBtn=document.getElementById('micBtn');
+const micStatus=document.getElementById('micStatus');
+const transcriptEl=document.getElementById('transcript');
+
+if(SR){
+  recognition=new SR();
+  recognition.lang='en-US';
+  recognition.interimResults=true;
+  recognition.maxAlternatives=1;
+
+  recognition.onstart=()=>{
+    isListening=true;
+    micBtn.classList.add('listening');
+    micBtn.classList.remove('done');
+    micStatus.textContent='Listening…';
+    transcriptEl.textContent='…';
+  };
+
+  recognition.onresult=(e)=>{
+    const interim=Array.from(e.results).map(r=>r[0].transcript).join('');
+    transcriptEl.textContent=interim;
+    if(e.results[e.results.length-1].isFinal){
+      const final=e.results[e.results.length-1][0].transcript;
+      transcriptEl.textContent=final;
+      const ok=parseVoice(final);
+      micBtn.classList.remove('listening');
+      micBtn.classList.add('done');
+      micStatus.textContent=ok?'Got it — tap again to update':'Didn\'t catch that, try again';
+      if(!ok)speak('I didn\'t catch that. Try saying: spot price 3300, or 18 karat, or 10 grams.');
+    }
+  };
+
+  recognition.onerror=(e)=>{
+    isListening=false;
+    micBtn.classList.remove('listening');
+    if(e.error==='not-allowed')micStatus.textContent='Mic access denied';
+    else if(e.error!=='aborted')micStatus.textContent='Error — try again';
+  };
+
+  recognition.onend=()=>{
+    isListening=false;
+    micBtn.classList.remove('listening');
+  };
+
+  micBtn.addEventListener('click',()=>{
+    if(isListening){recognition.stop();}
+    else{micBtn.classList.remove('done');try{recognition.start();}catch(e){}}
+  });
+}
+</script>
+</body>
+</html>
